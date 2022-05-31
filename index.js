@@ -115,6 +115,22 @@ async function buildNotionMap(notionTasks, notionProjects, notionAreas) {
     return notionAreas
 }
 
+async function notionCompleteTask(notionPageId) {
+    return notion.pages.update({
+        page_id: notionPageId,
+        properties: {
+            'Done': {
+                checkbox: true
+            },
+            'Todoist Last Update': {
+                date: {
+                    start: new Date()
+                }
+            }
+        }
+    })
+}
+
 async function updateNotionTodoist(notionPageId, todoistId) {
     return notion.pages.update({
         page_id: notionPageId,
@@ -179,17 +195,22 @@ async function processNotionTasks(task, todoistTasks, projectId=null, parentTask
                 task.todoistId = todoistTask.id
             }
         }
+        else {
+            if (undefined === todoistTasks.find(
+                function(t){ return t.id == task.todoistId })) {
+                notionCompleteTask(task.pageId)
+            }
+
+        }
         for(const subTask of task.subTasks) {
-            processTodoistTask(subTask, todoistTasks, projectId, task.todoistId)
+            processNotionTasks(subTask, todoistTasks, projectId, task.todoistId)
         }
     }
-    else if (task.todoistId !== null && task.done == true)
-    {
-        const todoistTask = todoistTasks.find(
+    else if (task.todoistId !== null && task.done == true) {
+        const todoistTask = todoistTasks.find (
             function(t){ return t.id == task.todoistId }
         )
-        if (todoistTask !== null)
-        {
+        if (todoistTask !== null) {
             todoist.closeTask(task.todoistId)
             updateNotionTodoist(task.pageId, task.todoistId)
         }
@@ -200,7 +221,7 @@ async function processNotionTasks(task, todoistTasks, projectId=null, parentTask
     const notionTasks = await getTasks()
     const notionProjects = await getProjects()
     const notionAreas = await getAreas()
-    const notionMap = buildNotionMap(notionTasks, notionProjects, notionAreas)
+    const notionMap = await buildNotionMap(notionTasks, notionProjects, notionAreas)
 
     const todoistProjects = await todoist.getProjects()
     const todoistTasks = await todoist.getTasks()
@@ -211,8 +232,7 @@ async function processNotionTasks(task, todoistTasks, projectId=null, parentTask
         }
         for(const project of area.projects) {
             processNotionProjects(project, todoistProjects, area.todoistId, 36)
-            for(const notionTask of project.tasks)
-            {
+            for(const notionTask of project.tasks) {
                 processNotionTasks(notionTask, todoistTasks, project.todoistId, null)
             }
         }
