@@ -228,10 +228,10 @@ async function processNotionTasks(task, todoistTasks, projectId=null, parentTask
 
     for(const area of notionMap) {
         if (area.todoistId === null) {
-            processNotionProjects(area, todoistProjects,null, 41)
+            processNotionProjects(area, todoistProjects,null, process.env.TODOIST_AREA_COLOUR)
         }
         for(const project of area.projects) {
-            processNotionProjects(project, todoistProjects, area.todoistId, 36)
+            processNotionProjects(project, todoistProjects, area.todoistId, process.env.TODOIST_PROJECT_COLOUR)
             for(const notionTask of project.tasks) {
                 processNotionTasks(notionTask, todoistTasks, project.todoistId, null)
             }

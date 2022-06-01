@@ -1,0 +1,19 @@
+{
+  "name": "ub-todoist",
+  "version": "0.1.0",
+  "description": "Sync from the Ultimate Brain Notion template to Todoist",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Mitchell Hewes <me@mitcdh.com> (https://mitcdh.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitcdh/ub-todoist"
+  },
+  "dependencies": {
+    "@notionhq/client": "^0.4.2",
+    "@doist/todoist-api-typescript":  "^1.5.0",
+    "dotenv": "^10.0.0"
+  }
+}
