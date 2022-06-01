@@ -1,6 +1,6 @@
 
 # Ultimate Brain to Todoist
-This is a small node.js application to sync Tasks from Thomas Frank's [Ultimate Brain template](https://thomasjfrank.com/brain/) for [Notion](https://www.notion.so/) to [Todoist].
+This is a small node.js application to sync Tasks from Thomas Frank's [Ultimate Brain template](https://thomasjfrank.com/brain/) for [Notion](https://www.notion.so/) to [Todoist](https://todoist.com/).
 
 ## Setup
 ### Notion Setup
