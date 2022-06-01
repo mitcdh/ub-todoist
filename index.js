@@ -237,5 +237,6 @@ async function processNotionTasks(task, todoistTasks, projectId=null, parentTask
             }
         }
     }
-    // Probably need to add
+    // Iterate over todoistTasks here to identify any that lack a notion tracked todoistId
+    // Then they can be created as new Notion tasks
 })();

@@ -33,3 +33,4 @@ Add all of the environment variables to a `.env` file and run the application, i
 ## Todo
 * Support creating tasks in Notion from tasks created under the Todoist projects.
 * Support running as a daemon to run on a defined interval.
+* Write inline documentation and comments
