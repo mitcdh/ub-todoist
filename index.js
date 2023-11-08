@@ -136,7 +136,7 @@ async function updateNotionTodoist(notionPageId, todoistId) {
         page_id: notionPageId,
         properties: {
             'Todoist ID': {
-                number: todoistId,
+                number: Number(todoistId),
             },
             'Todoist Last Update': {
                 date: {
@@ -217,6 +217,97 @@ async function processNotionTasks(task, todoistTasks, projectId=null, parentTask
     }
 }
 
+async function createNotionTasksForUntrackedTodoistTasks(todoistTasks, notionTasks) {
+    const notionTrackedTodoistIds = new Set(notionTasks.map(task => task.todoistId));
+    let notionTodoistIdToPageId = new Map(notionTasks.map(task => [task.todoistId, task.pageId]));
+    const tasksToCreate = [];
+    const subtasksToCreate = [];
+
+    // Separate tasks into those that can be created immediately and those that need to wait for their parent task
+    for (const todoistTask of todoistTasks) {
+        if (!notionTrackedTodoistIds.has(todoistTask.id)) {
+            const taskData = {
+                content: todoistTask.content,
+                due: todoistTask.due ? todoistTask.due.date : null,
+                priority: todoistTask.priority,
+                parent_id: todoistTask.parent_id,
+                id: todoistTask.id
+            };
+            if (todoistTask.parent_id) {
+                subtasksToCreate.push(taskData);
+            } else {
+                tasksToCreate.push(taskData);
+            }
+        }
+    }
+
+    // First pass: create tasks without parents
+    for (const task of tasksToCreate) {
+        const pageId = await createNotionTask(task);
+        if (pageId) {
+            notionTodoistIdToPageId.set(task.id, pageId);
+        }
+    }
+
+    // Second pass: create subtasks, ensuring parent tasks are created
+    for (const subtask of subtasksToCreate) {
+        // Wait until the parent task is created and we have its Notion page ID
+        const parentPageId = notionTodoistIdToPageId.get(subtask.parent_id);
+        if (parentPageId) {
+            subtask.parentNotionPageId = parentPageId; // Set the parent Notion page ID
+            await createNotionTask(subtask);
+        }
+    }
+}
+
+async function createNotionTask(task) {
+    try {
+        const properties = {
+            'Task': {
+                title: [
+                    {
+                        type: 'text',
+                        text: { content: task.content },
+                    },
+                ],
+            },
+            'Due': {
+                date: task.due ? { start: task.due } : null,
+            },
+            'Priority': {
+                select: {
+                    name: priorityConversion(task.priority),
+                },
+            },
+            'Todoist ID': {
+                number: Number(task.id),
+            },
+            // Add other properties as needed
+        };
+
+        // If the task is a subtask, set the parent task property
+        if (task.parentNotionPageId) {
+            properties['Parent Task'] = {
+                relation: [{ id: task.parentNotionPageId }],
+            };
+        }
+
+        const newNotionTask = {
+            parent: { database_id: tasksDatabaseId },
+            properties: properties,
+        };
+
+        // Call the Notion API to create the new task
+        const { id: pageId } = await notion.pages.create(newNotionTask);
+        return pageId;
+    } catch (error) {
+        console.error('Failed to create task in Notion:', error);
+        return null;
+    }
+}
+
+
+
 (async () => {
     const notionTasks = await getTasks()
     const notionProjects = await getProjects()
@@ -237,6 +328,5 @@ async function processNotionTasks(task, todoistTasks, projectId=null, parentTask
             }
         }
     }
-    // Iterate over todoistTasks here to identify any that lack a notion tracked todoistId
-    // Then they can be created as new Notion tasks
+    await createNotionTasksForUntrackedTodoistTasks(todoistTasks, notionTasks);
 })();
